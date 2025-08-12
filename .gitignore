@@ -1,0 +1,422 @@
+# VLM Counting Bias Research Platform - Git Ignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# poetry
+poetry.lock
+
+# pdm
+.pdm.toml
+
+# PEP 582
+__pypackages__/
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Cython debug symbols
+cython_debug/
+
+# PyCharm IDE
+.idea/
+
+# Visual Studio Code
+.vscode/
+*.code-workspace
+
+# Spyder IDE
+.spyderproject
+.spyproject
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.tmp
+*.temp
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# Project-specific data directories
+data/coco/images/
+data/coco/annotations/
+data/coco/*.zip
+data/coco/*.json
+data/camouflage/images/
+data/synthetic/images/
+data/synthetic/*.png
+data/synthetic/*.jpg
+data/synthetic/*.jpeg
+
+# Generated results and reports
+results/experiments/
+results/plots/*.png
+results/plots/*.jpg
+results/plots/*.pdf
+results/reports/*.html
+results/reports/*.pdf
+results/models/
+results/*.csv
+results/*.json
+results/*.md
+
+# Model files and checkpoints
+models/checkpoints/
+models/weights/
+models/*.pth
+models/*.pt
+models/*.ckpt
+models/*.safetensors
+
+# API keys and secrets (IMPORTANT!)
+.env.local
+.env.production
+.env.staging
+secrets.toml
+config/secrets.json
+api_keys.txt
+*.key
+*.pem
+*.crt
+
+# Large files that shouldn't be committed
+*.h5
+*.hdf5
+*.pkl
+*.pickle
+*.npy
+*.npz
+
+# Temporary files
+temp/
+tmp/
+*.tmp
+*.temp
+.temp*
+
+# Logs
+logs/
+*.log
+*.out
+*.err
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Streamlit cache
+.streamlit/
+
+# Hugging Face cache
+.cache/huggingface/
+transformers_cache/
+
+# OpenAI cache
+.openai_cache/
+
+# Plotly cache
+.plotly_cache/
+
+# Matplotlib cache
+.matplotlib/
+
+# Jupyter lab workspace
+.jupyter-workspaces/
+
+# Backup files
+*.bak
+*.backup
+*~
+*.swp
+*.swo
+
+# Archive files (unless explicitly needed)
+*.zip
+*.tar.gz
+*.tar.bz2
+*.7z
+*.rar
+
+# Compiled documentation
+docs/_build/
+docs/site/
+
+# Coverage reports
+coverage/
+htmlcov/
+
+# Profiling data
+*.prof
+
+# Memory profiling
+*.mprof
+
+# Large dataset files (comment out if you want to track specific datasets)
+*.tsv
+*.parquet
+
+# COCO specific (large files)
+val2017.zip
+train2017.zip
+annotations_trainval2017.zip
+test2017.zip
+image_info_test2017.zip
+panoptic_annotations_trainval2017.zip
+
+# Model-specific cache directories
+blip2_cache/
+llava_cache/
+gpt4v_cache/
+
+# Experimental outputs
+experiments/
+benchmarks/
+ablation_studies/
+
+# Documentation build
+docs/build/
+sphinx/_build/
+
+# Package build artifacts
+*.whl
+
+# Configuration overrides
+config_local.py
+settings_local.py
+
+# IDE-specific files
+*.sublime-project
+*.sublime-workspace
+
+# OS-specific thumbnails
+.thumbnails/
+
+# Node.js (if using any JS tools)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Temporary Streamlit files
+.streamlit/secrets.toml
+
+# Replit specific (if using Replit)
+.replit
+replit.nix
+.config/
+
+# Docker
+.dockerignore
+Dockerfile
+docker-compose.yml
+
+# Kubernetes
+*.yaml
+*.yml
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+
+# AWS
+.aws/
+
+# Google Cloud
+.gcloud/
+service-account-key.json
+
+# Azure
+.azure/
+
+# Custom exclusions for this project
+synthetic_images_large/
+real_world_images_large/
+model_predictions_cache/
+batch_processing_results/
+video_analysis_results/
+
+# Research paper drafts and figures
+paper/
+figures/
+manuscripts/
+*.tex
+*.aux
+*.bbl
+*.blg
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+
+# Presentation materials
+presentations/
+slides/
+*.pptx
+*.ppt
+
+# Large synthetic datasets
+synthetic_datasets_full/
+generated_occlusion_sets/
+
+# API response cache
+api_cache/
+response_cache/
+
+# Benchmark results
+benchmark_results/
+timing_results/
+memory_profiles/
+
+# Annotation tools output
+annotations/
+labeled_data/
+verification_results/
+
+# Keep these directories but ignore their contents
+!data/.gitkeep
+!results/.gitkeep
+!logs/.gitkeep
+!temp/.gitkeep
+
+# Exception: Keep small example files
+!data/examples/
+!results/examples/
+
+# Keep configuration templates
+!config/config.template.py
+!config/secrets.template.json
+
+# Keep small test datasets
+!tests/data/
+tests/data/*.png
+tests/data/*.jpg
+
+# Keep documentation images
+!docs/images/
+!README_images/
