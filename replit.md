@@ -34,9 +34,9 @@ Preferred communication style: Simple, everyday language.
 # External Dependencies
 
 ## Vision-Language Model APIs
-- **OpenAI API**: GPT-4V access requiring API key authentication
-- **HuggingFace Inference API**: BLIP-2 model access with optional authentication token
-- **HuggingFace Transformers**: Local model execution for open-source VLMs
+- **OpenAI API**: GPT-4V access with API key configured in Replit Secrets (OPENAI_API_KEY)
+- **HuggingFace Inference API**: BLIP-2 and LLaVA model access with token configured in Replit Secrets (HF_TOKEN)
+- **HuggingFace Transformers**: Local model execution for open-source VLMs (optional for advanced usage)
 
 ## Data Sources
 - **MS COCO Dataset**: Real-world image evaluation with verified object counts
