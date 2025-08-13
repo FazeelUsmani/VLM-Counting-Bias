@@ -326,10 +326,10 @@ yarn-error.log*
 # Temporary Streamlit files
 .streamlit/secrets.toml
 
-# Replit specific (if using Replit)
-.replit
-replit.nix
+# Replit specific files to exclude
 .config/
+.upm/
+.pythonlibs/
 
 # Docker
 .dockerignore
