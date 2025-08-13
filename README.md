@@ -1,6 +1,6 @@
 # Vision-Language Model Counting Bias Research Platform
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/your-repo/vlm-counting-bias)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/FazeelUsmani/VLM-Counting-Bias/blob/main/notebooks/01_counting_occlusion_synthetic.ipynb)
 
 A comprehensive research platform for evaluating vision-language model (VLM) counting biases under occlusion and camouflage conditions. This platform provides systematic tools for analyzing how state-of-the-art VLMs perform object counting tasks when objects are partially hidden, occluded, or camouflaged.
 
