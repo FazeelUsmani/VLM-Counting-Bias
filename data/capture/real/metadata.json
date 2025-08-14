@@ -1,0 +1,5 @@
+{
+  "dataset": "CAPTURe-real-sample",
+  "description": "Sample real images for testing VLM counting bias",
+  "images": []
+}

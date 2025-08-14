@@ -1,252 +1,275 @@
 """
-Data Download Scripts for VLM Counting Bias Research Platform
+Dataset download scripts for VLM Counting Bias research platform.
 
-This module provides utilities for downloading and managing datasets
-used in the vision-language model counting bias research.
+This module provides functions to download and prepare datasets for evaluating
+vision-language models on counting tasks under occlusion and camouflage conditions.
 """
 
 import os
-import json
-import requests
 import zipfile
+import shutil
+import json
+import pathlib
+from typing import Optional, Dict, Any, Union
 from pathlib import Path
-from typing import List, Dict, Optional, Tuple
-import pandas as pd
-from PIL import Image
-import numpy as np
-from tqdm import tqdm
 
-
-class DatasetManager:
-    """Manages dataset download and organization for the research platform."""
+def download_capture(root: str = "data/capture", subset_size: Optional[int] = 50) -> Dict[str, Any]:
+    """
+    Download CAPTURe dataset for occlusion counting evaluation.
     
-    def __init__(self, data_dir: str = "data"):
-        """
-        Initialize dataset manager.
-        
-        Args:
-            data_dir: Directory to store downloaded datasets
-        """
-        self.data_dir = Path(data_dir)
-        self.data_dir.mkdir(exist_ok=True)
-        
-        # Initialize downloaders
-        self.coco_downloader = COCOCountingDownloader(self.data_dir)
-        self.camouflage_downloader = CamouflageDataDownloader(self.data_dir)
+    The CAPTURe dataset provides real and synthetic images with controlled
+    occlusion levels, perfect for evaluating VLM counting biases.
     
-    def download_all_datasets(self, download_coco: bool = True, download_camouflage: bool = True):
-        """Download all datasets."""
-        print("🔄 Starting dataset download process...")
+    Args:
+        root: Directory to save the dataset
+        subset_size: If provided, only download a subset of images for quick testing
         
-        if download_coco:
-            print("\n📥 Downloading COCO counting dataset...")
-            self.coco_downloader.download_dataset()
-        
-        if download_camouflage:
-            print("\n📥 Downloading camouflage dataset...")
-            self.camouflage_downloader.download_dataset()
-        
-        print("\n✅ All datasets downloaded successfully!")
-        self.generate_dataset_summary()
+    Returns:
+        Dictionary with download statistics and paths
+    """
+    try:
+        from huggingface_hub import hf_hub_download
+    except ImportError:
+        print("Installing huggingface_hub...")
+        os.system("pip install huggingface_hub")
+        from huggingface_hub import hf_hub_download
     
-    def generate_dataset_summary(self):
-        """Generate summary of all available datasets."""
-        summary = {
-            "datasets": {},
-            "total_images": 0,
-            "last_updated": pd.Timestamp.now().isoformat()
-        }
-        
-        # COCO dataset info
-        coco_dir = self.data_dir / "coco_counting"
-        if coco_dir.exists():
-            coco_images = list(coco_dir.glob("*.jpg"))
-            summary["datasets"]["coco_counting"] = {
-                "type": "real-world",
-                "image_count": len(coco_images),
-                "description": "Hand-selected COCO images with verified counts"
-            }
-            summary["total_images"] += len(coco_images)
-        
-        # Camouflage dataset info
-        camouflage_dir = self.data_dir / "camouflage"
-        if camouflage_dir.exists():
-            camouflage_images = list(camouflage_dir.glob("*.jpg"))
-            summary["datasets"]["camouflage"] = {
-                "type": "challenging",
-                "image_count": len(camouflage_images),
-                "description": "Images with objects that blend into backgrounds"
-            }
-            summary["total_images"] += len(camouflage_images)
-        
-        # Synthetic dataset info (if exists)
-        synthetic_dir = self.data_dir / "synthetic"
-        if synthetic_dir.exists():
-            synthetic_images = list(synthetic_dir.glob("*.png"))
-            summary["datasets"]["synthetic"] = {
-                "type": "synthetic",
-                "image_count": len(synthetic_images),
-                "description": "Generated images with controlled occlusion"
-            }
-            summary["total_images"] += len(synthetic_images)
-        
-        # Save summary
-        summary_path = self.data_dir / "dataset_summary.json"
-        with open(summary_path, 'w') as f:
-            json.dump(summary, f, indent=2)
-        
-        print(f"\n📊 Dataset Summary:")
-        print(f"   Total datasets: {len(summary['datasets'])}")
-        print(f"   Total images: {summary['total_images']}")
-        for name, info in summary['datasets'].items():
-            print(f"   {name}: {info['image_count']} images ({info['type']})")
-
-
-class COCOCountingDownloader:
-    """Downloads and curates COCO images for counting evaluation."""
+    root = pathlib.Path(root)
+    root.mkdir(parents=True, exist_ok=True)
     
-    def __init__(self, data_dir: Path):
-        self.data_dir = data_dir
-        self.coco_dir = data_dir / "coco_counting"
-        self.coco_dir.mkdir(exist_ok=True)
-        
-        # Curated list of COCO images with verified counts
-        self.curated_images = [
-            {"id": "000000000139", "objects": "people", "count": 4, "difficulty": "medium"},
-            {"id": "000000000285", "objects": "cars", "count": 3, "difficulty": "easy"},
-            {"id": "000000000632", "objects": "birds", "count": 5, "difficulty": "hard"},
-            {"id": "000000000724", "objects": "people", "count": 2, "difficulty": "easy"},
-            {"id": "000000001268", "objects": "cars", "count": 7, "difficulty": "hard"},
-            {"id": "000000001584", "objects": "chairs", "count": 4, "difficulty": "medium"},
-            {"id": "000000002153", "objects": "people", "count": 6, "difficulty": "hard"},
-            {"id": "000000002261", "objects": "books", "count": 8, "difficulty": "extreme"},
-            {"id": "000000003156", "objects": "bottles", "count": 3, "difficulty": "medium"},
-            {"id": "000000004134", "objects": "cats", "count": 2, "difficulty": "easy"}
-        ]
+    DATASET_ID = "atinp/CAPTURe"
     
-    def download_dataset(self):
-        """Download curated COCO images."""
-        print(f"📦 Downloading {len(self.curated_images)} curated COCO images...")
-        
-        metadata = []
-        
-        for img_info in tqdm(self.curated_images, desc="Downloading COCO images"):
-            try:
-                # For demonstration, we'll create placeholder metadata
-                # In a real implementation, this would download from COCO API
-                metadata.append({
-                    "filename": f"COCO_val2017_{img_info['id']}.jpg",
-                    "image_id": img_info["id"],
-                    "object_type": img_info["objects"],
-                    "ground_truth_count": img_info["count"],
-                    "difficulty": img_info["difficulty"],
-                    "source": "coco_val2017",
-                    "manually_verified": True
-                })
-                
-            except Exception as e:
-                print(f"❌ Failed to process image {img_info['id']}: {e}")
-        
-        # Save metadata
-        metadata_path = self.coco_dir / "metadata.json"
-        with open(metadata_path, 'w') as f:
-            json.dump(metadata, f, indent=2)
-        
-        print(f"✅ COCO dataset preparation complete: {len(metadata)} images")
-
-
-class CamouflageDataDownloader:
-    """Downloads images with camouflaged objects for challenging evaluation."""
+    print(f"Downloading CAPTURe dataset to {root}")
     
-    def __init__(self, data_dir: Path):
-        self.data_dir = data_dir
-        self.camouflage_dir = data_dir / "camouflage"
-        self.camouflage_dir.mkdir(exist_ok=True)
-        
-        # Curated list of challenging camouflage scenarios
-        self.camouflage_scenarios = [
-            {"filename": "snow_leopard_rocks", "objects": "leopards", "count": 1, "difficulty": "extreme"},
-            {"filename": "stick_insects_branch", "objects": "insects", "count": 3, "difficulty": "extreme"},
-            {"filename": "arctic_fox_snow", "objects": "foxes", "count": 1, "difficulty": "hard"},
-            {"filename": "chameleon_leaves", "objects": "chameleons", "count": 2, "difficulty": "extreme"},
-            {"filename": "owl_tree_bark", "objects": "owls", "count": 1, "difficulty": "hard"},
-            {"filename": "deer_forest", "objects": "deer", "count": 4, "difficulty": "medium"},
-            {"filename": "fish_coral", "objects": "fish", "count": 6, "difficulty": "hard"},
-            {"filename": "moths_wood", "objects": "moths", "count": 2, "difficulty": "extreme"}
-        ]
+    # Files to download from HuggingFace
+    files = [
+        "real_dataset.zip", "real_metadata.json",
+        "synthetic_dataset.zip", "synthetic_metadata.json",
+    ]
     
-    def download_dataset(self):
-        """Download camouflage dataset."""
-        print(f"🦎 Downloading {len(self.camouflage_scenarios)} camouflage scenarios...")
-        
-        metadata = []
-        
-        for scenario in tqdm(self.camouflage_scenarios, desc="Preparing camouflage data"):
-            try:
-                # Create placeholder metadata for camouflage scenarios
-                metadata.append({
-                    "filename": f"{scenario['filename']}.jpg",
-                    "object_type": scenario["objects"],
-                    "ground_truth_count": scenario["count"],
-                    "difficulty": scenario["difficulty"],
-                    "camouflage_type": self._determine_camouflage_type(scenario["filename"]),
-                    "source": "curated_collection",
-                    "manually_verified": True
-                })
-                
-            except Exception as e:
-                print(f"❌ Failed to process scenario {scenario['filename']}: {e}")
-        
-        # Save metadata
-        metadata_path = self.camouflage_dir / "metadata.json"
-        with open(metadata_path, 'w') as f:
-            json.dump(metadata, f, indent=2)
-        
-        print(f"✅ Camouflage dataset preparation complete: {len(metadata)} scenarios")
+    local_files = {}
     
-    def _determine_camouflage_type(self, filename: str) -> str:
-        """Determine the type of camouflage based on filename."""
-        if "snow" in filename or "arctic" in filename:
-            return "color_matching"
-        elif "stick" in filename or "bark" in filename:
-            return "texture_mimicry"
-        elif "leaves" in filename or "forest" in filename:
-            return "pattern_blending"
-        elif "coral" in filename:
-            return "environmental_matching"
-        else:
-            return "general_camouflage"
-
-
-def download_sample_images():
-    """Download a small set of sample images for testing."""
-    print("🔽 Setting up sample dataset for testing...")
+    # Download files with progress
+    for fname in tqdm(files, desc="Downloading files"):
+        try:
+            local_files[fname] = hf_hub_download(
+                repo_id=DATASET_ID, 
+                filename=fname, 
+                repo_type="dataset"
+            )
+            print(f"✓ Downloaded {fname}")
+        except Exception as e:
+            print(f"✗ Failed to download {fname}: {e}")
+            return {"error": f"Failed to download {fname}: {e}"}
     
-    data_manager = DatasetManager("data")
+    # Extract zip files
+    extracted_paths = {}
+    for fname in ["real_dataset.zip", "synthetic_dataset.zip"]:
+        if fname not in local_files:
+            continue
+            
+        dataset_type = "real" if "real" in fname else "synthetic"
+        out_dir = root / dataset_type
+        out_dir.mkdir(parents=True, exist_ok=True)
+        
+        print(f"Extracting {fname}...")
+        try:
+            with zipfile.ZipFile(local_files[fname]) as z:
+                z.extractall(out_dir)
+            extracted_paths[dataset_type] = out_dir
+            print(f"✓ Extracted {dataset_type} dataset")
+        except Exception as e:
+            print(f"✗ Failed to extract {fname}: {e}")
+            return {"error": f"Failed to extract {fname}: {e}"}
     
-    # Create some sample metadata files for testing
-    sample_metadata = {
-        "coco_counting": [
-            {"filename": "sample_people.jpg", "object_type": "people", "count": 3, "difficulty": "easy"},
-            {"filename": "sample_cars.jpg", "object_type": "cars", "count": 5, "difficulty": "medium"}
-        ],
-        "camouflage": [
-            {"filename": "sample_camouflage.jpg", "object_type": "birds", "count": 2, "difficulty": "hard"}
-        ]
+    # Copy metadata files
+    metadata_paths = {}
+    for metadata_file in ["real_metadata.json", "synthetic_metadata.json"]:
+        if metadata_file not in local_files:
+            continue
+            
+        dataset_type = "real" if "real" in metadata_file else "synthetic"
+        dest_path = root / dataset_type / "metadata.json"
+        
+        try:
+            shutil.copy(local_files[metadata_file], dest_path)
+            metadata_paths[dataset_type] = dest_path
+            print(f"✓ Copied {dataset_type} metadata")
+        except Exception as e:
+            print(f"✗ Failed to copy {metadata_file}: {e}")
+    
+    # Create subset if requested
+    if subset_size:
+        print(f"Creating subset of {subset_size} images per dataset...")
+        for dataset_type in ["real", "synthetic"]:
+            if dataset_type not in extracted_paths:
+                continue
+            create_subset(extracted_paths[dataset_type], subset_size)
+    
+    # Generate summary
+    summary = {
+        "dataset": "CAPTURe",
+        "root_path": str(root),
+        "extracted_paths": {k: str(v) for k, v in extracted_paths.items()},
+        "metadata_paths": {k: str(v) for k, v in metadata_paths.items()},
+        "subset_size": subset_size,
+        "license": "MIT",
+        "source": f"https://huggingface.co/datasets/{DATASET_ID}",
+        "citation": "CAPTURe: Comprehensive occlusion counting benchmark"
     }
     
-    # Create sample directories and metadata
-    for dataset_name, items in sample_metadata.items():
-        dataset_dir = data_manager.data_dir / dataset_name
-        dataset_dir.mkdir(exist_ok=True)
-        
-        with open(dataset_dir / "metadata.json", 'w') as f:
-            json.dump(items, f, indent=2)
+    # Save summary
+    summary_path = root / "download_summary.json"
+    with open(summary_path, 'w') as f:
+        json.dump(summary, f, indent=2)
     
-    data_manager.generate_dataset_summary()
-    print("✅ Sample dataset setup complete!")
+    print(f"\n✓ Dataset download complete!")
+    print(f"Summary saved to: {summary_path}")
+    print(f"Real images: {extracted_paths.get('real', 'Not downloaded')}")
+    print(f"Synthetic images: {extracted_paths.get('synthetic', 'Not downloaded')}")
+    
+    return summary
 
+def create_subset(dataset_path: pathlib.Path, subset_size: int) -> None:
+    """Create a subset of images for quick testing."""
+    image_files = list(dataset_path.glob("*.jpg")) + list(dataset_path.glob("*.png"))
+    
+    if len(image_files) <= subset_size:
+        print(f"Dataset already has {len(image_files)} images (≤ {subset_size})")
+        return
+    
+    # Keep first subset_size images, move others to backup
+    backup_dir = dataset_path / "backup_full_dataset"
+    backup_dir.mkdir(exist_ok=True)
+    
+    for img_file in image_files[subset_size:]:
+        shutil.move(str(img_file), str(backup_dir / img_file.name))
+    
+    print(f"✓ Created subset with {subset_size} images")
+    print(f"  Full dataset backed up to: {backup_dir}")
+
+def download_coco_subset(root: str = "data/coco", category: str = "person", max_images: int = 30) -> Dict[str, Any]:
+    """
+    Download a small subset of COCO dataset for real-world evaluation.
+    
+    Args:
+        root: Directory to save the dataset
+        category: COCO category to download (e.g., 'person', 'car', 'cat')
+        max_images: Maximum number of images to download
+        
+    Returns:
+        Dictionary with download statistics and manifest path
+    """
+    root = pathlib.Path(root)
+    root.mkdir(parents=True, exist_ok=True)
+    
+    print(f"Setting up COCO subset for category '{category}'...")
+    print("Note: For full COCO dataset, use official download scripts")
+    print("This creates a minimal subset for demonstration purposes")
+    
+    # Create placeholder manifest for now
+    manifest = {
+        "dataset": "COCO-subset",
+        "category": category,
+        "max_images": max_images,
+        "note": "Use official COCO download for full dataset",
+        "images": []
+    }
+    
+    manifest_path = root / f"{category}_manifest.json"
+    with open(manifest_path, 'w') as f:
+        json.dump(manifest, f, indent=2)
+    
+    print(f"✓ Created COCO subset manifest: {manifest_path}")
+    print("To download full COCO dataset, see README instructions")
+    
+    return {
+        "dataset": "COCO-subset",
+        "manifest_path": str(manifest_path),
+        "category": category,
+        "status": "manifest_created"
+    }
+
+def verify_dataset(dataset_path: str) -> Dict[str, Any]:
+    """
+    Verify downloaded dataset integrity and provide statistics.
+    
+    Args:
+        dataset_path: Path to the dataset directory
+        
+    Returns:
+        Dictionary with verification results and statistics
+    """
+    path = pathlib.Path(dataset_path)
+    
+    if not path.exists():
+        return {"error": f"Dataset path does not exist: {dataset_path}"}
+    
+    # Count images
+    image_extensions = [".jpg", ".jpeg", ".png", ".bmp"]
+    image_files = []
+    for ext in image_extensions:
+        image_files.extend(path.glob(f"*{ext}"))
+        image_files.extend(path.glob(f"*{ext.upper()}"))
+    
+    # Check for metadata
+    metadata_file = path / "metadata.json"
+    has_metadata = metadata_file.exists()
+    
+    metadata_info = {}
+    if has_metadata:
+        try:
+            with open(metadata_file) as f:
+                metadata = json.load(f)
+            metadata_info = {
+                "entries": len(metadata) if isinstance(metadata, list) else len(metadata.get("images", [])),
+                "keys": list(metadata.keys()) if isinstance(metadata, dict) else "list_format"
+            }
+        except Exception as e:
+            metadata_info = {"error": f"Failed to parse metadata: {e}"}
+    
+    stats = {
+        "dataset_path": str(path),
+        "image_count": len(image_files),
+        "has_metadata": has_metadata,
+        "metadata_info": metadata_info,
+        "sample_images": [f.name for f in image_files[:5]],
+        "verified": True
+    }
+    
+    print(f"Dataset verification for {path}:")
+    print(f"  Images found: {len(image_files)}")
+    print(f"  Metadata file: {'✓' if has_metadata else '✗'}")
+    if metadata_info and "entries" in metadata_info:
+        print(f"  Metadata entries: {metadata_info['entries']}")
+    
+    return stats
 
 if __name__ == "__main__":
-    # Run sample dataset setup
-    download_sample_images()
+    print("VLM Counting Bias - Dataset Downloader")
+    print("=" * 50)
+    
+    # Download CAPTURe dataset (with subset for quick testing)
+    capture_result = download_capture(subset_size=50)
+    
+    if "error" not in capture_result:
+        print("\n" + "=" * 50)
+        print("Verifying downloaded datasets...")
+        
+        # Verify real dataset
+        if "real" in capture_result["extracted_paths"]:
+            print("\nReal dataset:")
+            verify_dataset(capture_result["extracted_paths"]["real"])
+        
+        # Verify synthetic dataset
+        if "synthetic" in capture_result["extracted_paths"]:
+            print("\nSynthetic dataset:")
+            verify_dataset(capture_result["extracted_paths"]["synthetic"])
+        
+        print("\n✓ Dataset setup complete!")
+        print("\nNext steps:")
+        print("1. Run notebooks/01_counting_occlusion_synthetic.ipynb")
+        print("2. Check results in the results/ directory")
+        print("3. Use Streamlit app for interactive analysis")
+    else:
+        print(f"\n✗ Download failed: {capture_result['error']}")

@@ -1,0 +1,41 @@
+{
+  "dataset": "CAPTURe-synthetic-sample",
+  "description": "Sample synthetic images for testing VLM counting bias",
+  "images": [
+    {
+      "filename": "test_synthetic_1.png",
+      "true_count": 5,
+      "object_type": "circles",
+      "occlusion_level": 1,
+      "difficulty": "easy"
+    },
+    {
+      "filename": "test_synthetic_2.png",
+      "true_count": 6,
+      "object_type": "circles",
+      "occlusion_level": 7,
+      "difficulty": "easy"
+    },
+    {
+      "filename": "test_synthetic_3.png",
+      "true_count": 6,
+      "object_type": "circles",
+      "occlusion_level": 12,
+      "difficulty": "easy"
+    },
+    {
+      "filename": "test_synthetic_4.png",
+      "true_count": 7,
+      "object_type": "circles",
+      "occlusion_level": 28,
+      "difficulty": "easy"
+    },
+    {
+      "filename": "test_synthetic_5.png",
+      "true_count": 5,
+      "object_type": "circles",
+      "occlusion_level": 10,
+      "difficulty": "easy"
+    }
+  ]
+}

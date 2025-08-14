@@ -54,7 +54,8 @@ Large vision-language models (VLMs) can describe images impressively, but they o
    - Go to the Secrets tab in your Repl
    - Add `OPENAI_API_KEY` with your OpenAI API key
    - Optionally add `HF_TOKEN` for HuggingFace private models
-3. Run the Streamlit app: The workflow will start automatically
+3. Create test data: `python create_test_data.py`
+4. Run the Streamlit app: The workflow will start automatically
 
 #### Option B: Google Colab (for GPU support)
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/your-repo/vlm-counting-bias/blob/main/notebooks/01_counting_occlusion_synthetic.ipynb)
