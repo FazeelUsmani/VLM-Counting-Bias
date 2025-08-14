@@ -4,6 +4,8 @@
 
 A comprehensive research platform for evaluating vision-language model (VLM) counting biases under occlusion and camouflage conditions. This platform provides systematic tools for analyzing how state-of-the-art VLMs perform object counting tasks when objects are partially hidden, occluded, or camouflaged.
 
+**Repository**: [https://github.com/FazeelUsmani/VLM-Counting-Bias](https://github.com/FazeelUsmani/VLM-Counting-Bias)
+
 ## 🔬 Research Overview
 
 Large vision-language models (VLMs) can describe images impressively, but they often struggle with precise tasks like counting objects, especially when some objects are partially hidden or blend into their surroundings. This platform enables systematic evaluation of these limitations across multiple models and scenarios.
@@ -49,7 +51,7 @@ Large vision-language models (VLMs) can describe images impressively, but they o
 ### 1. Environment Setup
 
 #### Option A: Replit (Recommended)
-1. Fork this repository on Replit
+1. Fork the [VLM-Counting-Bias repository](https://github.com/FazeelUsmani/VLM-Counting-Bias) on Replit
 2. Set up your API keys in Replit Secrets:
    - Go to the Secrets tab in your Repl
    - Add `OPENAI_API_KEY` with your OpenAI API key
@@ -58,7 +60,7 @@ Large vision-language models (VLMs) can describe images impressively, but they o
 4. Run the Streamlit app: The workflow will start automatically
 
 #### Option B: Google Colab (for GPU support)
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/your-repo/vlm-counting-bias/blob/main/notebooks/01_counting_occlusion_synthetic.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/FazeelUsmani/VLM-Counting-Bias/blob/main/notebooks/01_counting_occlusion_synthetic.ipynb)
 
 1. Click the Colab badge above or open any notebook directly
 2. Run the first cell to install dependencies
@@ -66,8 +68,12 @@ Large vision-language models (VLMs) can describe images impressively, but they o
 
 #### Option C: Local Installation
 ```bash
-pip install -r requirements.txt  # Use dependencies from pyproject.toml
-python -m streamlit run app.py --server.port 5000
+git clone https://github.com/FazeelUsmani/VLM-Counting-Bias.git
+cd VLM-Counting-Bias
+pip install -e .
+export OPENAI_API_KEY="your-key-here"
+python create_test_data.py
+streamlit run app.py --server.port 5000
 ```
 
 ### 2. API Key Setup
@@ -145,6 +151,48 @@ GitHub Actions automatically test the platform:
 │   └── test_smoke.py                 # Automated test suite
 ├── .github/workflows/
 │   └── ci.yml                        # Continuous integration
+├── create_test_data.py                # Sample data generator
 └── .streamlit/
     └── config.toml                   # Streamlit configuration
 ```
+
+## 🔗 Links
+
+- **GitHub Repository**: [https://github.com/FazeelUsmani/VLM-Counting-Bias](https://github.com/FazeelUsmani/VLM-Counting-Bias)
+- **Run on Replit**: Fork and run instantly on Replit  
+- **Open in Colab**: Use the badges above to run notebooks in Google Colab
+
+## 📄 Citation
+
+If you use this platform in your research, please cite:
+
+```bibtex
+@misc{vlm-counting-bias-2024,
+  title={VLM Counting Bias Research Platform},
+  author={Fazeel Usmani},
+  year={2024},
+  url={https://github.com/FazeelUsmani/VLM-Counting-Bias}
+}
+```
+
+## 📝 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- OpenAI for GPT-4V API access
+- HuggingFace for model hosting and inference APIs  
+- The COCO dataset maintainers
+- CAPTURe dataset creators for occlusion counting benchmarks
+- Streamlit team for the excellent dashboard framework
+
+## 🤝 Contributing
+
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+## 📧 Contact
+
+For questions about this research platform:
+- Open an issue on [GitHub](https://github.com/FazeelUsmani/VLM-Counting-Bias/issues)
+- Check the documentation for setup instructions

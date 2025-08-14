@@ -33,6 +33,11 @@ Preferred communication style: Simple, everyday language.
 
 # External Dependencies
 
+## GitHub Repository
+- **Repository URL**: https://github.com/FazeelUsmani/VLM-Counting-Bias
+- **Status**: Active development and deployment ready
+- **Deployment**: Available on Replit with instant fork capability
+
 ## Vision-Language Model APIs
 - **OpenAI API**: GPT-4V access with API key configured in Replit Secrets (OPENAI_API_KEY)
 - **HuggingFace Inference API**: BLIP-2 and LLaVA model access with token configured in Replit Secrets (HF_TOKEN)
