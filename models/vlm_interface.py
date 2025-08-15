@@ -266,11 +266,7 @@ class VLMManager:
         # Always add GPT-4V (will show error if no API key)
         self.models['GPT-4V'] = GPT4VInterface(api_key=self.openai_key, max_retries=max_retries) if (self.openai_key and OPENAI_AVAILABLE) else None
         
-        # Add BLIP-2 (works without API keys via public HF Inference API)
-        self.models['BLIP-2'] = BLIP2Interface(hf_token=self.hf_token, max_retries=max_retries)
-        
-        # Add LLaVA via HuggingFace API (no local dependencies needed)
-        self.models['LLaVA'] = LLaVAInterface(hf_token=self.hf_token, max_retries=max_retries)
+        # BLIP-2 and LLaVA removed due to API reliability issues
         
         # Always add Claude Vision (will show error if no API key)
         anthropic_key = os.getenv("ANTHROPIC_API_KEY")
@@ -312,134 +308,7 @@ class VLMManager:
         return model_instance.count_objects(image_base64, object_type, **kwargs)
 
 
-class BLIP2Interface(VLMInterface):
-    """Interface for BLIP-2 via HuggingFace Inference API."""
-    
-    def __init__(self, hf_token: Optional[str] = None, max_retries: int = 3):
-        self.hf_token = hf_token or os.getenv("HF_TOKEN")
-        self.max_retries = max_retries
-        # Use working BLIP model endpoint
-        self.api_url = "https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-base"
-        
-    def count_objects(self, image_base64: str, object_type: str, **kwargs) -> Dict[str, Any]:
-        """Count objects using BLIP-2."""
-        
-        headers = {}
-        if self.hf_token:
-            headers["Authorization"] = f"Bearer {self.hf_token}"
-        
-        # Convert base64 to bytes
-        image_bytes = base64.b64decode(image_base64)
-        
-        # Create text prompt for BLIP
-        text_prompt = f"How many {object_type} are in this image?"
-        
-        for attempt in range(self.max_retries):
-            try:
-                # Use the correct format for HuggingFace image captioning
-                response = requests.post(
-                    self.api_url,
-                    headers=headers,
-                    data=image_bytes,
-                    timeout=30
-                )
-                
-                if response.status_code == 200:
-                    result = response.json()
-                    
-                    # BLIP returns a list of generated text
-                    if isinstance(result, list) and len(result) > 0:
-                        answer = result[0].get('generated_text', str(result[0]))
-                    elif isinstance(result, dict):
-                        answer = result.get('generated_text', str(result))
-                    else:
-                        answer = str(result)
-                    
-                    # Extract count from answer
-                    count = self.extract_number_from_text(answer)
-                    
-                    # Estimate confidence based on answer characteristics
-                    confidence = self._estimate_confidence(answer, count)
-                    
-                    return {
-                        'count': count,
-                        'confidence': confidence,
-                        'reasoning': answer,
-                        'raw_response': str(result),
-                        'model': 'blip-image-captioning'
-                    }
-                    
-                elif response.status_code == 503:
-                    # Model loading, retry with exponential backoff
-                    wait_time = 2 ** attempt
-                    logger.info(f"Model loading, waiting {wait_time}s before retry...")
-                    time.sleep(wait_time)
-                    continue
-                    
-                else:
-                    if attempt == self.max_retries - 1:
-                        return {
-                            'count': 0,
-                            'confidence': 0.0,
-                            'error': f'HTTP {response.status_code}: {response.text}',
-                            'reasoning': 'API request failed',
-                            'model': 'Salesforce/blip-image-captioning-base'
-                        }
-                
-            except Exception as e:
-                logger.error(f"Error on attempt {attempt + 1}: {e}")
-                if attempt == self.max_retries - 1:
-                    return {
-                        'count': 0,
-                        'confidence': 0.0,
-                        'error': str(e),
-                        'reasoning': f'Error after {self.max_retries} attempts',
-                        'model': 'blip-image-captioning'
-                    }
-                
-                time.sleep(2 ** attempt)
-        
-        return {
-            'count': 0,
-            'confidence': 0.0,
-            'error': 'Max retries exceeded',
-            'model': 'blip-image-captioning'
-        }
-    
-    def _create_counting_question(self, object_type: str, **kwargs) -> str:
-        """Create question for BLIP-2 counting."""
-        
-        scenario_type = kwargs.get('scenario_type', 'general')
-        
-        if scenario_type == 'camouflage':
-            return f"How many {object_type} are in this image? Look carefully for ones that might be hidden or camouflaged."
-        else:
-            return f"How many {object_type} can you see in this image? Count all visible ones including partially hidden ones."
-    
-    def _estimate_confidence(self, answer: str, count: int) -> float:
-        """Estimate confidence based on answer characteristics."""
-        if not answer:
-            return 0.1
-        
-        answer_lower = answer.lower()
-        
-        # High confidence indicators
-        if any(phrase in answer_lower for phrase in ['clearly', 'exactly', 'precisely', 'definitely']):
-            base_confidence = 0.9
-        elif any(str(i) in answer for i in range(20)):  # Contains specific number
-            base_confidence = 0.8
-        else:
-            base_confidence = 0.6
-        
-        # Reduce confidence for uncertainty indicators
-        if any(phrase in answer_lower for phrase in ['maybe', 'might', 'possibly', 'unsure', 'difficult']):
-            base_confidence *= 0.7
-        
-        # Reduce confidence for very high counts (likely errors)
-        if count > 20:
-            base_confidence *= 0.5
-        
-        return min(1.0, max(0.1, base_confidence))
+# BLIP2Interface removed due to API reliability issues
 
 
 class ClaudeVisionInterface(VLMInterface):
@@ -633,88 +502,7 @@ class GeminiVisionInterface(VLMInterface):
         }
 
 
-class LLaVAInterface(VLMInterface):
-    """Interface for LLaVA via HuggingFace Inference API."""
-    
-    def __init__(self, model_path: str = "nlpconnect/vit-gpt2-image-captioning", hf_token: Optional[str] = None, max_retries: int = 3):
-        self.model_path = model_path
-        self.hf_token = hf_token or os.getenv("HF_TOKEN")
-        self.max_retries = max_retries
-        self.api_url = f"https://api-inference.huggingface.co/models/{self.model_path}"
-    
-    def count_objects(self, image_base64: str, object_type: str, **kwargs) -> Dict[str, Any]:
-        """Count objects using LLaVA via HuggingFace Inference API."""
-        
-        headers = {}
-        if self.hf_token:
-            headers["Authorization"] = f"Bearer {self.hf_token}"
-        
-        image_bytes = base64.b64decode(image_base64)
-        prompt = f"How many {object_type} are in this image? Count carefully and provide only the number."
-        
-        for attempt in range(self.max_retries):
-            try:
-                # Use proper HuggingFace format for image captioning
-                response = requests.post(
-                    self.api_url,
-                    headers=headers,
-                    data=image_bytes,
-                    timeout=30
-                )
-                
-                if response.status_code == 200:
-                    result = response.json()
-                    
-                    # Handle different response formats
-                    if isinstance(result, list) and len(result) > 0:
-                        answer = result[0].get('generated_text', '')
-                    elif isinstance(result, dict):
-                        answer = result.get('generated_text', result.get('answer', ''))
-                    else:
-                        answer = str(result)
-                    
-                    count = self.extract_number_from_text(answer)
-                    confidence = 0.7 if count > 0 else 0.3
-                    
-                    return {
-                        'count': count,
-                        'confidence': confidence,
-                        'reasoning': answer,
-                        'raw_response': str(result),
-                        'model': 'nlpconnect/vit-gpt2-image-captioning'
-                    }
-                    
-                elif response.status_code == 503:
-                    wait_time = 2 ** attempt
-                    logger.info(f"Model loading, waiting {wait_time}s...")
-                    time.sleep(wait_time)
-                    continue
-                    
-                else:
-                    if attempt == self.max_retries - 1:
-                        return {
-                            'count': 0,
-                            'confidence': 0.0,
-                            'error': f'HTTP {response.status_code}: {response.text}',
-                            'model': 'nlpconnect/vit-gpt2-image-captioning'
-                        }
-                
-            except Exception as e:
-                if attempt == self.max_retries - 1:
-                    return {
-                        'count': 0,
-                        'confidence': 0.0,
-                        'error': str(e),
-                        'model': 'nlpconnect/vit-gpt2-image-captioning'
-                    }
-                time.sleep(2 ** attempt)
-        
-        return {
-            'count': 0,
-            'confidence': 0.0,
-            'error': 'Max retries exceeded',
-            'model': 'vit-gpt2-image-captioning'
-        }
+# LLaVAInterface removed due to API reliability issues
 
 
 # Convenience function for easy usage  
