@@ -269,9 +269,22 @@ class VLMManager:
         # Add BLIP-2 (works without API keys via public HF Inference API)
         self.models['BLIP-2'] = BLIP2Interface(hf_token=self.hf_token, max_retries=max_retries)
         
-        # Add LLaVA only if transformers is available
-        if TRANSFORMERS_AVAILABLE:
-            self.models['LLaVA'] = LLaVAInterface(max_retries=max_retries)
+        # Add LLaVA via HuggingFace API (no local dependencies needed)
+        self.models['LLaVA'] = LLaVAInterface(max_retries=max_retries)
+        
+        # Add Claude Vision if API key available
+        anthropic_key = os.getenv("ANTHROPIC_API_KEY")
+        if anthropic_key:
+            self.models['Claude-Vision'] = ClaudeVisionInterface(api_key=anthropic_key, max_retries=max_retries)
+        
+        # Add Gemini Vision if API key available
+        gemini_key = os.getenv("GEMINI_API_KEY")
+        if gemini_key:
+            self.models['Gemini-Vision'] = GeminiVisionInterface(api_key=gemini_key, max_retries=max_retries)
+        
+        # Add more HuggingFace models via API
+        self.models['BLIP2-FlanT5'] = BLIP2Interface(hf_token=self.hf_token, max_retries=max_retries, model_name="Salesforce/blip2-flan-t5-xl")
+        self.models['InstructBLIP'] = BLIP2Interface(hf_token=self.hf_token, max_retries=max_retries, model_name="Salesforce/instructblip-vicuna-7b")
     
     def get_available_models(self) -> List[str]:
         """Get list of available model names."""
@@ -419,30 +432,203 @@ class BLIP2Interface(VLMInterface):
         return min(1.0, max(0.1, base_confidence))
 
 
+class ClaudeVisionInterface(VLMInterface):
+    """Interface for Claude 3 Vision via Anthropic API."""
+    
+    def __init__(self, api_key: Optional[str] = None, max_retries: int = 3):
+        self.api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
+        self.max_retries = max_retries
+        self.api_url = "https://api.anthropic.com/v1/messages"
+    
+    def count_objects(self, image_base64: str, object_type: str, **kwargs) -> Dict[str, Any]:
+        """Count objects using Claude Vision."""
+        
+        if not self.api_key:
+            return {
+                'count': 0,
+                'confidence': 0.0,
+                'error': 'Anthropic API key required',
+                'reasoning': 'No API key provided',
+                'model': 'claude-3-vision'
+            }
+        
+        headers = {
+            "Content-Type": "application/json",
+            "x-api-key": self.api_key,
+            "anthropic-version": "2023-06-01"
+        }
+        
+        prompt = f"Look at this image and count how many {object_type} you can see. Provide your answer as a JSON object with 'count', 'confidence' (0-1), and 'reasoning' fields."
+        
+        data = {
+            "model": "claude-3-opus-20240229",
+            "max_tokens": 1000,
+            "messages": [{
+                "role": "user", 
+                "content": [
+                    {"type": "text", "text": prompt},
+                    {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": image_base64}}
+                ]
+            }]
+        }
+        
+        for attempt in range(self.max_retries):
+            try:
+                response = requests.post(self.api_url, headers=headers, json=data, timeout=30)
+                
+                if response.status_code == 200:
+                    result = response.json()
+                    content = result['content'][0]['text']
+                    
+                    # Try to parse JSON from response
+                    try:
+                        parsed = json.loads(content)
+                        return {
+                            'count': int(parsed.get('count', 0)),
+                            'confidence': float(parsed.get('confidence', 0.5)),
+                            'reasoning': parsed.get('reasoning', content),
+                            'raw_response': content,
+                            'model': 'claude-3-vision'
+                        }
+                    except json.JSONDecodeError:
+                        # Extract count from text
+                        count = self.extract_number_from_text(content)
+                        return {
+                            'count': count,
+                            'confidence': 0.6,
+                            'reasoning': content,
+                            'raw_response': content,
+                            'model': 'claude-3-vision'
+                        }
+                else:
+                    if attempt == self.max_retries - 1:
+                        return {
+                            'count': 0,
+                            'confidence': 0.0,
+                            'error': f'HTTP {response.status_code}: {response.text}',
+                            'model': 'claude-3-vision'
+                        }
+                        
+            except Exception as e:
+                if attempt == self.max_retries - 1:
+                    return {
+                        'count': 0,
+                        'confidence': 0.0,
+                        'error': str(e),
+                        'model': 'claude-3-vision'
+                    }
+                time.sleep(2 ** attempt)
+        
+        return {
+            'count': 0,
+            'confidence': 0.0,
+            'error': 'Max retries exceeded',
+            'model': 'claude-3-vision'
+        }
+
+
+class GeminiVisionInterface(VLMInterface):
+    """Interface for Google Gemini Vision via Gemini API."""
+    
+    def __init__(self, api_key: Optional[str] = None, max_retries: int = 3):
+        self.api_key = api_key or os.getenv("GEMINI_API_KEY")
+        self.max_retries = max_retries
+        self.api_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent"
+    
+    def count_objects(self, image_base64: str, object_type: str, **kwargs) -> Dict[str, Any]:
+        """Count objects using Gemini Vision."""
+        
+        if not self.api_key:
+            return {
+                'count': 0,
+                'confidence': 0.0,
+                'error': 'Gemini API key required',
+                'reasoning': 'No API key provided',
+                'model': 'gemini-pro-vision'
+            }
+        
+        headers = {
+            "Content-Type": "application/json"
+        }
+        
+        prompt = f"Look at this image and count how many {object_type} you can see. Provide your answer as a JSON object with 'count' (number), 'confidence' (0-1), and 'reasoning' (string) fields."
+        
+        data = {
+            "contents": [{
+                "parts": [
+                    {"text": prompt},
+                    {"inline_data": {"mime_type": "image/png", "data": image_base64}}
+                ]
+            }]
+        }
+        
+        for attempt in range(self.max_retries):
+            try:
+                response = requests.post(
+                    f"{self.api_url}?key={self.api_key}", 
+                    headers=headers, 
+                    json=data, 
+                    timeout=30
+                )
+                
+                if response.status_code == 200:
+                    result = response.json()
+                    content = result['candidates'][0]['content']['parts'][0]['text']
+                    
+                    # Try to parse JSON from response
+                    try:
+                        parsed = json.loads(content)
+                        return {
+                            'count': int(parsed.get('count', 0)),
+                            'confidence': float(parsed.get('confidence', 0.5)),
+                            'reasoning': parsed.get('reasoning', content),
+                            'raw_response': content,
+                            'model': 'gemini-pro-vision'
+                        }
+                    except json.JSONDecodeError:
+                        # Extract count from text
+                        count = self.extract_number_from_text(content)
+                        return {
+                            'count': count,
+                            'confidence': 0.6,
+                            'reasoning': content,
+                            'raw_response': content,
+                            'model': 'gemini-pro-vision'
+                        }
+                else:
+                    if attempt == self.max_retries - 1:
+                        return {
+                            'count': 0,
+                            'confidence': 0.0,
+                            'error': f'HTTP {response.status_code}: {response.text}',
+                            'model': 'gemini-pro-vision'
+                        }
+                        
+            except Exception as e:
+                if attempt == self.max_retries - 1:
+                    return {
+                        'count': 0,
+                        'confidence': 0.0,
+                        'error': str(e),
+                        'model': 'gemini-pro-vision'
+                    }
+                time.sleep(2 ** attempt)
+        
+        return {
+            'count': 0,
+            'confidence': 0.0,
+            'error': 'Max retries exceeded',
+            'model': 'gemini-pro-vision'
+        }
+
+
 class LLaVAInterface(VLMInterface):
-    """Interface for LLaVA (Local inference - requires GPU)."""
+    """Interface for LLaVA via HuggingFace Inference API."""
     
     def __init__(self, model_path: str = "llava-hf/llava-1.5-7b-hf", max_retries: int = 3):
-        if not TRANSFORMERS_AVAILABLE:
-            raise ImportError("Transformers library required for LLaVA. Install with: pip install transformers torch")
-        
         self.model_path = model_path
         self.max_retries = max_retries
-        self.model = None
-        self.processor = None
-        
-    def _load_model(self):
-        """Lazy load the model when needed."""
-        if self.model is None:
-            try:
-                logger.info(f"Loading LLaVA model: {self.model_path}")
-                # Note: This is a placeholder - actual LLaVA loading would require specific setup
-                # For now, we'll use HuggingFace Inference API as a fallback
-                self.api_url = f"https://api-inference.huggingface.co/models/{self.model_path}"
-                logger.info("Using HuggingFace Inference API for LLaVA")
-            except Exception as e:
-                logger.error(f"Failed to load LLaVA model: {e}")
-                raise
+        self.api_url = f"https://api-inference.huggingface.co/models/{self.model_path}"
     
     def count_objects(self, image_base64: str, object_type: str, **kwargs) -> Dict[str, Any]:
         """Count objects using LLaVA."""

@@ -40,15 +40,35 @@ def main():
             help="Required for GPT-4V analysis"
         )
         
+        anthropic_key = st.text_input(
+            "Anthropic API Key", 
+            type="password", 
+            value=os.getenv("ANTHROPIC_API_KEY", ""),
+            help="Required for Claude Vision analysis"
+        )
+        
+        gemini_key = st.text_input(
+            "Gemini API Key", 
+            type="password", 
+            value=os.getenv("GEMINI_API_KEY", ""),
+            help="Required for Gemini Vision analysis"
+        )
+        
         hf_token = st.text_input(
             "HuggingFace Token", 
             type="password", 
             value=os.getenv("HF_TOKEN", ""),
-            help="Optional: For private model access"
+            help="Optional: For private model access and LLaVA"
         )
         
         # Model selection
         st.subheader("Model Selection")
+        
+        # Set environment variables for API keys
+        if anthropic_key:
+            os.environ["ANTHROPIC_API_KEY"] = anthropic_key
+        if gemini_key:
+            os.environ["GEMINI_API_KEY"] = gemini_key
         
         # Get available models dynamically
         try:
@@ -56,6 +76,8 @@ def main():
             available_models = temp_vlm.get_available_models()
         except:
             available_models = ["BLIP-2"]  # Fallback to BLIP-2 which works without API keys
+        
+        st.info(f"Available models: {', '.join(available_models)}")
         
         selected_models = st.multiselect(
             "Choose VLMs to evaluate:",
@@ -209,7 +231,8 @@ def display_analysis_results(analysis):
         if 'error' in prediction:
             results_data.append({
                 'Model': model_name,
-                'Count': 'Error',
+                'Count': -1,  # Use -1 to indicate error
+                'Status': 'Error',
                 'Confidence': 'N/A',
                 'Error': prediction['error']
             })
@@ -217,6 +240,7 @@ def display_analysis_results(analysis):
             results_data.append({
                 'Model': model_name,
                 'Count': prediction['count'],
+                'Status': 'Success',
                 'Confidence': f"{prediction['confidence']:.2f}",
                 'Error': None
             })
