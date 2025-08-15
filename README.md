@@ -36,8 +36,8 @@ Large vision-language models (VLMs) can describe images impressively, but they o
 
 ### Model Support
 - **GPT-4V (GPT-4 with Vision)**: Latest multimodal model from OpenAI
-- **BLIP-2**: Open-source VLM via HuggingFace Inference API
-- **LLaVA**: Large Language and Vision Assistant
+- **Claude-Vision**: Claude 3 Vision via Anthropic API
+- **Gemini-Vision**: Google Gemini Vision via Google AI API
 - **Extensible Architecture**: Easy to add new models
 
 ### Comprehensive Metrics
@@ -55,7 +55,8 @@ Large vision-language models (VLMs) can describe images impressively, but they o
 2. Set up your API keys in Replit Secrets:
    - Go to the Secrets tab in your Repl
    - Add `OPENAI_API_KEY` with your OpenAI API key
-   - Optionally add `HF_TOKEN` for HuggingFace private models
+   - Add `ANTHROPIC_API_KEY` for Claude Vision analysis
+   - Add `GEMINI_API_KEY` for Gemini Vision analysis
 3. Create test data: `python create_test_data.py`
 4. Run the Streamlit app: The workflow will start automatically
 
@@ -81,15 +82,17 @@ streamlit run app.py --server.port 5000
 #### Replit Secrets (Secure Method)
 API keys are stored securely using Replit's Secrets feature:
 - **OPENAI_API_KEY**: Required for GPT-4V analysis (get from https://platform.openai.com)
-- **HF_TOKEN**: Optional for private HuggingFace models
+- **ANTHROPIC_API_KEY**: Required for Claude Vision analysis (get from https://console.anthropic.com)
+- **GEMINI_API_KEY**: Required for Gemini Vision analysis (get from https://ai.google.dev)
 
 The application automatically reads these from environment variables, so no hardcoding is needed.
 
 #### Manual Environment Setup
 If not using Replit, set environment variables:
 ```bash
-export OPENAI_API_KEY="your-key-here"
-export HF_TOKEN="your-token-here"  # optional
+export OPENAI_API_KEY="your-openai-key-here"
+export ANTHROPIC_API_KEY="your-anthropic-key-here"
+export GEMINI_API_KEY="your-gemini-key-here"
 ```
 
 ### 3. Running Experiments
@@ -182,7 +185,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🙏 Acknowledgments
 
 - OpenAI for GPT-4V API access
-- HuggingFace for model hosting and inference APIs  
+- Anthropic for Claude Vision API access
+- Google for Gemini Vision API access
 - The COCO dataset maintainers
 - CAPTURe dataset creators for occlusion counting benchmarks
 - Streamlit team for the excellent dashboard framework
