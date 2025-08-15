@@ -331,7 +331,7 @@ def run_batch_analysis(uploaded_files, object_type, selected_models, openai_key,
     """Run analysis on batch of images"""
     
     try:
-        vlm_interface = VLMInterface(
+        vlm_manager = VLMManager(
             openai_key=openai_key,
             hf_token=hf_token
         )
@@ -363,7 +363,7 @@ def run_batch_analysis(uploaded_files, object_type, selected_models, openai_key,
             
             for model_name in selected_models:
                 try:
-                    prediction = vlm_interface.count_objects(
+                    prediction = vlm_manager.count_objects(
                         model_name, img_base64, object_type
                     )
                     file_results['predictions'][model_name] = prediction
@@ -510,7 +510,7 @@ def results_dashboard():
     
     with col4:
         unique_models = results_df['model'].nunique()
-        st.metric("Models Tested", unique_models)
+        st.metric("Models Tested", int(unique_models))
     
     # Visualizations
     if len(results_df) > 1:

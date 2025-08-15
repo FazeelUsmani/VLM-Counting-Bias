@@ -107,15 +107,28 @@ class GPT4VInterface(VLMInterface):
         if not self.api_key:
             raise ValueError("OpenAI API key required. Set OPENAI_API_KEY environment variable or pass api_key parameter.")
         
-        self.client = openai.OpenAI(api_key=self.api_key)
+        if OPENAI_AVAILABLE:
+            self.client = openai.OpenAI(api_key=self.api_key)
+        else:
+            self.client = None
         self.max_retries = max_retries
         
     def count_objects(self, image_base64: str, object_type: str, **kwargs) -> Dict[str, Any]:
         """Count objects using GPT-4V."""
         
+        if not OPENAI_AVAILABLE or self.client is None:
+            return {
+                'count': 0,
+                'confidence': 0.0,
+                'error': 'OpenAI library not available',
+                'reasoning': 'OpenAI API not initialized',
+                'model': 'gpt-4o'
+            }
+        
         # Enhanced prompt for better counting performance
         prompt = self._create_counting_prompt(object_type, **kwargs)
         
+        response = None
         for attempt in range(self.max_retries):
             try:
                 # the newest OpenAI model is "gpt-4o" which was released May 13, 2024.
@@ -143,7 +156,10 @@ class GPT4VInterface(VLMInterface):
                 )
                 
                 result_text = response.choices[0].message.content
-                result = json.loads(result_text)
+                if result_text:
+                    result = json.loads(result_text)
+                else:
+                    raise ValueError("Empty response from API")
                 
                 return {
                     'count': int(result.get('count', 0)),
@@ -158,11 +174,14 @@ class GPT4VInterface(VLMInterface):
                 logger.warning(f"JSON decode error on attempt {attempt + 1}: {e}")
                 if attempt == self.max_retries - 1:
                     # Try to extract count from raw text
-                    count = self.extract_number_from_text(response.choices[0].message.content)
+                    content = ""
+                    if response and response.choices and len(response.choices) > 0:
+                        content = response.choices[0].message.content if response.choices[0].message.content else ""
+                    count = self.extract_number_from_text(content)
                     return {
                         'count': count,
                         'confidence': 0.3,
-                        'reasoning': f'JSON parsing failed, extracted count from text: {response.choices[0].message.content}',
+                        'reasoning': f'JSON parsing failed, extracted count from text: {content}',
                         'error': f'JSON decode error: {str(e)}',
                         'model': 'gpt-4o'
                     }
