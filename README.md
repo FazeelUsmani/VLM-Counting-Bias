@@ -16,6 +16,12 @@ Large vision-language models (VLMs) can describe images impressively, but they o
 - How well do models handle camouflaged objects?
 - Can we quantify and predict counting performance degradation?
 
+## 📱 Platform Interface
+
+![VLM Counting Bias Research Platform](assets/app-screenshot.png)
+
+The interactive Streamlit dashboard provides real-time analysis with multiple VLM comparison, accuracy metrics, and comprehensive visualizations for systematic evaluation of counting biases.
+
 ## 🚀 Features
 
 ### Interactive Analysis
