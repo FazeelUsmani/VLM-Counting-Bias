@@ -82,23 +82,31 @@ def main():
         st.info(f"Available models: {', '.join(available_models)}")
         
         # Model selection with better UX
-        selected_models = st.multiselect(
-            "Choose VLMs to evaluate:",
-            available_models,
-            default=available_models[:1] if available_models else [],
-            key="model_selector"
-        )
+        # Initialize selection state
+        if 'selected_models_state' not in st.session_state:
+            st.session_state.selected_models_state = available_models[:1] if available_models else []
         
-        # Control buttons below dropdown
+        # Control buttons above dropdown
         col1, col2 = st.columns(2)
         with col1:
             if st.button("Select All", key="select_all_models"):
-                st.session_state.model_selector = available_models
+                st.session_state.selected_models_state = available_models
                 st.rerun()
         with col2:
             if st.button("Clear All", key="clear_all_models"):
-                st.session_state.model_selector = []
+                st.session_state.selected_models_state = []
                 st.rerun()
+        
+        selected_models = st.multiselect(
+            "Choose VLMs to evaluate:",
+            available_models,
+            default=st.session_state.selected_models_state,
+            key="model_selector"
+        )
+        
+        # Update the state when selection changes
+        if selected_models != st.session_state.selected_models_state:
+            st.session_state.selected_models_state = selected_models
         
         # Analysis parameters
         st.subheader("Analysis Parameters")
