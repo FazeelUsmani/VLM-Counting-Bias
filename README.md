@@ -56,15 +56,16 @@ The interactive Streamlit dashboard provides real-time analysis with multiple VL
 
 ### 1. Environment Setup
 
-#### Option A: Replit (Recommended)
-1. Fork the [VLM-Counting-Bias repository](https://github.com/FazeelUsmani/VLM-Counting-Bias) on Replit
-2. Set up your API keys in Replit Secrets:
+#### Option A: GitHub + Replit (Recommended)
+1. Fork the [VLM-Counting-Bias repository](https://github.com/FazeelUsmani/VLM-Counting-Bias) on GitHub
+2. Import your forked repository into Replit
+3. Set up your API keys in Replit Secrets:
    - Go to the Secrets tab in your Repl
    - Add `OPENAI_API_KEY` with your OpenAI API key
    - Add `ANTHROPIC_API_KEY` for Claude Vision analysis
    - Add `GEMINI_API_KEY` for Gemini Vision analysis
-3. Create test data: `python create_test_data.py`
-4. Run the Streamlit app: The workflow will start automatically
+4. Create test data: `python create_test_data.py`
+5. Run the Streamlit app: The workflow will start automatically
 
 #### Option B: Google Colab (for GPU support)
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/FazeelUsmani/VLM-Counting-Bias/blob/main/notebooks/01_counting_occlusion_synthetic.ipynb)
@@ -168,7 +169,7 @@ GitHub Actions automatically test the platform:
 ## 🔗 Links
 
 - **GitHub Repository**: [https://github.com/FazeelUsmani/VLM-Counting-Bias](https://github.com/FazeelUsmani/VLM-Counting-Bias)
-- **Run on Replit**: Fork and run instantly on Replit  
+- **Run on Replit**: Fork from GitHub and import to Replit  
 - **Open in Colab**: Use the badges above to run notebooks in Google Colab
 
 ## 📄 Citation
