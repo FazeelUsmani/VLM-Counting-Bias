@@ -91,11 +91,9 @@ def main():
         with col1:
             if st.button("Select All", key="select_all_models"):
                 st.session_state.selected_models_state = available_models
-                st.rerun()
         with col2:
             if st.button("Clear All", key="clear_all_models"):
                 st.session_state.selected_models_state = []
-                st.rerun()
         
         selected_models = st.multiselect(
             "Choose VLMs to evaluate:",
