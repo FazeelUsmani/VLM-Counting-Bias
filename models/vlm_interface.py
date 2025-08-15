@@ -318,8 +318,8 @@ class BLIP2Interface(VLMInterface):
     def __init__(self, hf_token: Optional[str] = None, max_retries: int = 3):
         self.hf_token = hf_token or os.getenv("HF_TOKEN")
         self.max_retries = max_retries
-        # Use a more reliable BLIP model endpoint
-        self.api_url = "https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-large"
+        # Use working BLIP model endpoint
+        self.api_url = "https://api-inference.huggingface.co/models/microsoft/blip-image-captioning-base"
         
     def count_objects(self, image_base64: str, object_type: str, **kwargs) -> Dict[str, Any]:
         """Count objects using BLIP-2."""
@@ -336,15 +336,11 @@ class BLIP2Interface(VLMInterface):
         
         for attempt in range(self.max_retries):
             try:
-                # Use the correct format for BLIP image captioning
-                files = {'inputs': image_bytes}
-                data = {'text': text_prompt}
-                
+                # Use the correct format for HuggingFace image captioning
                 response = requests.post(
                     self.api_url,
                     headers=headers,
-                    files=files,
-                    data=data,
+                    data=image_bytes,
                     timeout=30
                 )
                 
@@ -658,15 +654,11 @@ class LLaVAInterface(VLMInterface):
         
         for attempt in range(self.max_retries):
             try:
-                # Use proper HuggingFace format for LLaVA
-                files = {'inputs': image_bytes}
-                data = {'text': prompt}
-                
+                # Use proper HuggingFace format for image captioning
                 response = requests.post(
                     self.api_url,
                     headers=headers,
-                    files=files,
-                    data=data,
+                    data=image_bytes,
                     timeout=30
                 )
                 
@@ -689,7 +681,7 @@ class LLaVAInterface(VLMInterface):
                         'confidence': confidence,
                         'reasoning': answer,
                         'raw_response': str(result),
-                        'model': 'llava-1.5-7b'
+                        'model': 'vit-gpt2-image-captioning'
                     }
                     
                 elif response.status_code == 503:
@@ -704,7 +696,7 @@ class LLaVAInterface(VLMInterface):
                             'count': 0,
                             'confidence': 0.0,
                             'error': f'HTTP {response.status_code}: {response.text}',
-                            'model': 'llava-1.5-7b'
+                            'model': 'vit-gpt2-image-captioning'
                         }
                 
             except Exception as e:
@@ -713,7 +705,7 @@ class LLaVAInterface(VLMInterface):
                         'count': 0,
                         'confidence': 0.0,
                         'error': str(e),
-                        'model': 'llava-1.5-7b'
+                        'model': 'vit-gpt2-image-captioning'
                     }
                 time.sleep(2 ** attempt)
         
@@ -721,7 +713,7 @@ class LLaVAInterface(VLMInterface):
             'count': 0,
             'confidence': 0.0,
             'error': 'Max retries exceeded',
-            'model': 'llava-1.5-7b'
+            'model': 'vit-gpt2-image-captioning'
         }
 
 
