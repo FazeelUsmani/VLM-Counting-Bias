@@ -78,10 +78,12 @@ The interactive Streamlit dashboard provides real-time analysis with multiple VL
 ```bash
 git clone https://github.com/FazeelUsmani/VLM-Counting-Bias.git
 cd VLM-Counting-Bias
-pip install -e .
+pip install -r requirements.txt
 export OPENAI_API_KEY="your-key-here"
+export ANTHROPIC_API_KEY="your-anthropic-key-here"  # Optional
+export GEMINI_API_KEY="your-gemini-key-here"        # Optional
 python create_test_data.py
-streamlit run app.py --server.port 5000
+streamlit run app.py --server.address 0.0.0.0 --server.port 5000
 ```
 
 ### 2. API Key Setup
