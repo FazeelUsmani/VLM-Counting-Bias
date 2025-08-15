@@ -7,7 +7,7 @@ import io
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
-from models.vlm_interface import VLMInterface
+from models.vlm_interface import VLMManager
 from utils.image_processing import preprocess_image
 from utils.evaluation_metrics import calculate_accuracy_metrics
 
@@ -97,7 +97,7 @@ def single_image_analysis(selected_models, openai_key, hf_token, confidence_thre
         
         if uploaded_file is not None:
             image = Image.open(uploaded_file)
-            st.image(image, caption="Uploaded Image", use_column_width=True)
+            st.image(image, caption="Uploaded Image", use_container_width=True)
             
             # Object type selection
             object_type = st.text_input(
@@ -133,9 +133,9 @@ def single_image_analysis(selected_models, openai_key, hf_token, confidence_thre
 def analyze_single_image(image, object_type, selected_models, openai_key, hf_token, ground_truth, confidence_threshold, max_retries):
     """Analyze a single image with selected VLMs"""
     
-    # Initialize VLM interface
+    # Initialize VLM Manager
     try:
-        vlm_interface = VLMInterface(
+        vlm_manager = VLMManager(
             openai_key=openai_key,
             hf_token=hf_token,
             confidence_threshold=confidence_threshold,
@@ -160,7 +160,7 @@ def analyze_single_image(image, object_type, selected_models, openai_key, hf_tok
                 img_base64 = base64.b64encode(img_buffer.getvalue()).decode()
                 
                 # Get prediction from model
-                prediction = vlm_interface.count_objects(
+                prediction = vlm_manager.count_objects(
                     model_name, img_base64, object_type
                 )
                 

@@ -231,6 +231,44 @@ Be precise in your counting and provide an honest confidence level."""
         return base_prompt
 
 
+class VLMManager:
+    """Manager class for handling multiple VLM interfaces."""
+    
+    def __init__(self, openai_key: Optional[str] = None, hf_token: Optional[str] = None, 
+                 confidence_threshold: float = 0.7, max_retries: int = 3):
+        self.openai_key = openai_key or os.getenv("OPENAI_API_KEY")
+        self.hf_token = hf_token or os.getenv("HF_TOKEN")
+        self.confidence_threshold = confidence_threshold
+        self.max_retries = max_retries
+        
+        # Initialize available models
+        self.models = {}
+        
+        if self.openai_key and OPENAI_AVAILABLE:
+            self.models['GPT-4V'] = GPT4VInterface(openai_key=self.openai_key, max_retries=max_retries)
+        
+        # Add BLIP-2 and LLaVA (they work without API keys via public HF Inference API)
+        self.models['BLIP-2'] = BLIP2Interface(hf_token=self.hf_token, max_retries=max_retries)
+        self.models['LLaVA'] = LLaVAInterface(max_retries=max_retries)
+    
+    def get_available_models(self) -> List[str]:
+        """Get list of available model names."""
+        return list(self.models.keys())
+    
+    def count_objects(self, model_name: str, image_base64: str, object_type: str, **kwargs) -> Dict[str, Any]:
+        """Count objects using specified model."""
+        if model_name not in self.models:
+            return {
+                'count': 0,
+                'confidence': 0.0,
+                'error': f'Model {model_name} not available',
+                'reasoning': 'Model not initialized or API key missing',
+                'model': model_name
+            }
+        
+        return self.models[model_name].count_objects(image_base64, object_type, **kwargs)
+
+
 class BLIP2Interface(VLMInterface):
     """Interface for BLIP-2 via HuggingFace Inference API."""
     
@@ -468,124 +506,7 @@ class LLaVAInterface(VLMInterface):
         }
 
 
-class VLMManager:
-    """Main interface for managing multiple VLMs."""
-    
-    def __init__(self, openai_key: Optional[str] = None, hf_token: Optional[str] = None, 
-                 confidence_threshold: float = 0.5, max_retries: int = 3):
-        """Initialize VLM manager with API keys and configuration."""
-        
-        self.openai_key = openai_key
-        self.hf_token = hf_token
-        self.confidence_threshold = confidence_threshold
-        self.max_retries = max_retries
-        
-        # Initialize available models
-        self.models = {}
-        
-        # GPT-4V
-        if openai_key and OPENAI_AVAILABLE:
-            try:
-                self.models['GPT-4V'] = GPT4VInterface(openai_key, max_retries)
-                logger.info("GPT-4V initialized successfully")
-            except Exception as e:
-                logger.warning(f"Failed to initialize GPT-4V: {e}")
-        
-        # BLIP-2
-        try:
-            self.models['BLIP-2'] = BLIP2Interface(hf_token, max_retries)
-            logger.info("BLIP-2 initialized successfully")
-        except Exception as e:
-            logger.warning(f"Failed to initialize BLIP-2: {e}")
-        
-        # LLaVA
-        try:
-            self.models['LLaVA'] = LLaVAInterface(max_retries=max_retries)
-            logger.info("LLaVA initialized successfully")
-        except Exception as e:
-            logger.warning(f"Failed to initialize LLaVA: {e}")
-        
-        logger.info(f"Initialized {len(self.models)} VLM models: {list(self.models.keys())}")
-    
-    def count_objects(self, model_name: str, image_base64: str, object_type: str, **kwargs) -> Dict[str, Any]:
-        """Count objects using specified model."""
-        
-        if model_name not in self.models:
-            available_models = list(self.models.keys())
-            raise ValueError(f"Model '{model_name}' not available. Available models: {available_models}")
-        
-        try:
-            result = self.models[model_name].count_objects(image_base64, object_type, **kwargs)
-            
-            # Add metadata
-            result['model_name'] = model_name
-            result['object_type'] = object_type
-            result['timestamp'] = time.time()
-            
-            # Flag low confidence results
-            if result.get('confidence', 0) < self.confidence_threshold:
-                result['low_confidence'] = True
-            
-            return result
-            
-        except Exception as e:
-            logger.error(f"Error with {model_name}: {e}")
-            return {
-                'count': 0,
-                'confidence': 0.0,
-                'error': str(e),
-                'model_name': model_name,
-                'object_type': object_type,
-                'timestamp': time.time()
-            }
-    
-    def count_objects_multi_model(self, model_names: List[str], image_base64: str, 
-                                  object_type: str, **kwargs) -> Dict[str, Dict[str, Any]]:
-        """Count objects using multiple models."""
-        
-        results = {}
-        
-        for model_name in model_names:
-            if model_name in self.models:
-                logger.info(f"Running {model_name} for {object_type} counting...")
-                results[model_name] = self.count_objects(model_name, image_base64, object_type, **kwargs)
-            else:
-                logger.warning(f"Model {model_name} not available, skipping...")
-                results[model_name] = {
-                    'count': 0,
-                    'confidence': 0.0,
-                    'error': f'Model {model_name} not available',
-                    'model_name': model_name,
-                    'object_type': object_type,
-                    'timestamp': time.time()
-                }
-        
-        return results
-    
-    def get_available_models(self) -> List[str]:
-        """Get list of available models."""
-        return list(self.models.keys())
-    
-    def get_model_info(self) -> Dict[str, Dict[str, Any]]:
-        """Get information about available models."""
-        info = {}
-        
-        for model_name, model_instance in self.models.items():
-            info[model_name] = {
-                'class': model_instance.__class__.__name__,
-                'available': True,
-                'max_retries': getattr(model_instance, 'max_retries', 3)
-            }
-            
-            if hasattr(model_instance, 'api_url'):
-                info[model_name]['api_url'] = model_instance.api_url
-            if hasattr(model_instance, 'model_path'):
-                info[model_name]['model_path'] = model_instance.model_path
-        
-        return info
-
-
-# Convenience function for easy usage
+# Convenience function for easy usage  
 def create_vlm_interface(openai_key: Optional[str] = None, hf_token: Optional[str] = None, **kwargs) -> VLMManager:
     """Create a VLM interface with default settings."""
     return VLMManager(
@@ -593,15 +514,3 @@ def create_vlm_interface(openai_key: Optional[str] = None, hf_token: Optional[st
         hf_token=hf_token or os.getenv("HF_TOKEN"),
         **kwargs
     )
-
-
-if __name__ == "__main__":
-    # Example usage
-    vlm = create_vlm_interface()
-    
-    print("Available models:", vlm.get_available_models())
-    print("Model info:", vlm.get_model_info())
-    
-    # Note: This would require an actual base64 encoded image
-    # result = vlm.count_objects("GPT-4V", image_base64, "person")
-    # print("Counting result:", result)
