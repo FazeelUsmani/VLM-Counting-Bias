@@ -266,9 +266,12 @@ class VLMManager:
         if self.openai_key and OPENAI_AVAILABLE:
             self.models['GPT-4V'] = GPT4VInterface(api_key=self.openai_key, max_retries=max_retries)
         
-        # Add BLIP-2 and LLaVA (they work without API keys via public HF Inference API)
+        # Add BLIP-2 (works without API keys via public HF Inference API)
         self.models['BLIP-2'] = BLIP2Interface(hf_token=self.hf_token, max_retries=max_retries)
-        self.models['LLaVA'] = LLaVAInterface(max_retries=max_retries)
+        
+        # Add LLaVA only if transformers is available
+        if TRANSFORMERS_AVAILABLE:
+            self.models['LLaVA'] = LLaVAInterface(max_retries=max_retries)
     
     def get_available_models(self) -> List[str]:
         """Get list of available model names."""

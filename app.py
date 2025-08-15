@@ -49,10 +49,18 @@ def main():
         
         # Model selection
         st.subheader("Model Selection")
+        
+        # Get available models dynamically
+        try:
+            temp_vlm = VLMManager(openai_key=openai_key, hf_token=hf_token)
+            available_models = temp_vlm.get_available_models()
+        except:
+            available_models = ["BLIP-2"]  # Fallback to BLIP-2 which works without API keys
+        
         selected_models = st.multiselect(
             "Choose VLMs to evaluate:",
-            ["GPT-4V", "BLIP-2", "LLaVA"],
-            default=["GPT-4V"]
+            available_models,
+            default=available_models[:1] if available_models else []
         )
         
         # Analysis parameters
