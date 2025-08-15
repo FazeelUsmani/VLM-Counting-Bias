@@ -270,7 +270,7 @@ class VLMManager:
         self.models['BLIP-2'] = BLIP2Interface(hf_token=self.hf_token, max_retries=max_retries)
         
         # Add LLaVA via HuggingFace API (no local dependencies needed)
-        self.models['LLaVA'] = LLaVAInterface(max_retries=max_retries)
+        self.models['LLaVA'] = LLaVAInterface(hf_token=self.hf_token, max_retries=max_retries)
         
         # Always add Claude Vision (will show error if no API key)
         anthropic_key = os.getenv("ANTHROPIC_API_KEY")
@@ -636,18 +636,18 @@ class GeminiVisionInterface(VLMInterface):
 class LLaVAInterface(VLMInterface):
     """Interface for LLaVA via HuggingFace Inference API."""
     
-    def __init__(self, model_path: str = "nlpconnect/vit-gpt2-image-captioning", max_retries: int = 3):
+    def __init__(self, model_path: str = "nlpconnect/vit-gpt2-image-captioning", hf_token: Optional[str] = None, max_retries: int = 3):
         self.model_path = model_path
+        self.hf_token = hf_token or os.getenv("HF_TOKEN")
         self.max_retries = max_retries
         self.api_url = f"https://api-inference.huggingface.co/models/{self.model_path}"
     
     def count_objects(self, image_base64: str, object_type: str, **kwargs) -> Dict[str, Any]:
         """Count objects using LLaVA via HuggingFace Inference API."""
         
-        hf_token = os.getenv("HF_TOKEN")
         headers = {}
-        if hf_token:
-            headers["Authorization"] = f"Bearer {hf_token}"
+        if self.hf_token:
+            headers["Authorization"] = f"Bearer {self.hf_token}"
         
         image_bytes = base64.b64decode(image_base64)
         prompt = f"How many {object_type} are in this image? Count carefully and provide only the number."
