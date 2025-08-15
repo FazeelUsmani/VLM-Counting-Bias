@@ -319,7 +319,7 @@ class BLIP2Interface(VLMInterface):
         self.hf_token = hf_token or os.getenv("HF_TOKEN")
         self.max_retries = max_retries
         # Use working BLIP model endpoint
-        self.api_url = "https://api-inference.huggingface.co/models/microsoft/blip-image-captioning-base"
+        self.api_url = "https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-base"
         
     def count_objects(self, image_base64: str, object_type: str, **kwargs) -> Dict[str, Any]:
         """Count objects using BLIP-2."""
@@ -383,7 +383,7 @@ class BLIP2Interface(VLMInterface):
                             'confidence': 0.0,
                             'error': f'HTTP {response.status_code}: {response.text}',
                             'reasoning': 'API request failed',
-                            'model': 'blip-image-captioning'
+                            'model': 'Salesforce/blip-image-captioning-base'
                         }
                 
             except Exception as e:
@@ -636,7 +636,7 @@ class GeminiVisionInterface(VLMInterface):
 class LLaVAInterface(VLMInterface):
     """Interface for LLaVA via HuggingFace Inference API."""
     
-    def __init__(self, model_path: str = "llava-hf/llava-1.5-7b-hf", max_retries: int = 3):
+    def __init__(self, model_path: str = "nlpconnect/vit-gpt2-image-captioning", max_retries: int = 3):
         self.model_path = model_path
         self.max_retries = max_retries
         self.api_url = f"https://api-inference.huggingface.co/models/{self.model_path}"
@@ -681,7 +681,7 @@ class LLaVAInterface(VLMInterface):
                         'confidence': confidence,
                         'reasoning': answer,
                         'raw_response': str(result),
-                        'model': 'vit-gpt2-image-captioning'
+                        'model': 'nlpconnect/vit-gpt2-image-captioning'
                     }
                     
                 elif response.status_code == 503:
@@ -696,7 +696,7 @@ class LLaVAInterface(VLMInterface):
                             'count': 0,
                             'confidence': 0.0,
                             'error': f'HTTP {response.status_code}: {response.text}',
-                            'model': 'vit-gpt2-image-captioning'
+                            'model': 'nlpconnect/vit-gpt2-image-captioning'
                         }
                 
             except Exception as e:
@@ -705,7 +705,7 @@ class LLaVAInterface(VLMInterface):
                         'count': 0,
                         'confidence': 0.0,
                         'error': str(e),
-                        'model': 'vit-gpt2-image-captioning'
+                        'model': 'nlpconnect/vit-gpt2-image-captioning'
                     }
                 time.sleep(2 ** attempt)
         
