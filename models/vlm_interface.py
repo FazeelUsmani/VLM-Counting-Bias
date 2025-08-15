@@ -318,7 +318,8 @@ class BLIP2Interface(VLMInterface):
     def __init__(self, hf_token: Optional[str] = None, max_retries: int = 3):
         self.hf_token = hf_token or os.getenv("HF_TOKEN")
         self.max_retries = max_retries
-        self.api_url = "https://api-inference.huggingface.co/models/Salesforce/blip2-opt-2.7b"
+        # Use a more reliable BLIP model endpoint
+        self.api_url = "https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-large"
         
     def count_objects(self, image_base64: str, object_type: str, **kwargs) -> Dict[str, Any]:
         """Count objects using BLIP-2."""
@@ -541,7 +542,8 @@ class GeminiVisionInterface(VLMInterface):
     def __init__(self, api_key: Optional[str] = None, max_retries: int = 3):
         self.api_key = api_key or os.getenv("GEMINI_API_KEY")
         self.max_retries = max_retries
-        self.api_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent"
+        # Use updated Gemini model endpoint
+        self.api_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
     
     def count_objects(self, image_base64: str, object_type: str, **kwargs) -> Dict[str, Any]:
         """Count objects using Gemini Vision."""
@@ -639,15 +641,7 @@ class LLaVAInterface(VLMInterface):
         self.api_url = f"https://api-inference.huggingface.co/models/{self.model_path}"
     
     def count_objects(self, image_base64: str, object_type: str, **kwargs) -> Dict[str, Any]:
-        """Count objects using LLaVA."""
-        
-        self._load_model()
-        
-        # Use HuggingFace Inference API as fallback
-        return self._count_via_api(image_base64, object_type, **kwargs)
-    
-    def _count_via_api(self, image_base64: str, object_type: str, **kwargs) -> Dict[str, Any]:
-        """Count using HuggingFace Inference API."""
+        """Count objects using LLaVA via HuggingFace Inference API."""
         
         hf_token = os.getenv("HF_TOKEN")
         headers = {}
