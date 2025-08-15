@@ -331,26 +331,31 @@ class BLIP2Interface(VLMInterface):
         # Convert base64 to bytes
         image_bytes = base64.b64decode(image_base64)
         
-        # Create question
-        question = self._create_counting_question(object_type, **kwargs)
+        # Create text prompt for BLIP
+        text_prompt = f"How many {object_type} are in this image?"
         
         for attempt in range(self.max_retries):
             try:
+                # Use the correct format for BLIP image captioning
+                files = {'inputs': image_bytes}
+                data = {'text': text_prompt}
+                
                 response = requests.post(
                     self.api_url,
                     headers=headers,
-                    data=image_bytes,
-                    params={"question": question},
+                    files=files,
+                    data=data,
                     timeout=30
                 )
                 
                 if response.status_code == 200:
                     result = response.json()
                     
+                    # BLIP returns a list of generated text
                     if isinstance(result, list) and len(result) > 0:
-                        answer = result[0].get('answer', '')
+                        answer = result[0].get('generated_text', str(result[0]))
                     elif isinstance(result, dict):
-                        answer = result.get('answer', '')
+                        answer = result.get('generated_text', str(result))
                     else:
                         answer = str(result)
                     
@@ -365,7 +370,7 @@ class BLIP2Interface(VLMInterface):
                         'confidence': confidence,
                         'reasoning': answer,
                         'raw_response': str(result),
-                        'model': 'blip2-opt-2.7b'
+                        'model': 'blip-image-captioning'
                     }
                     
                 elif response.status_code == 503:
@@ -382,7 +387,7 @@ class BLIP2Interface(VLMInterface):
                             'confidence': 0.0,
                             'error': f'HTTP {response.status_code}: {response.text}',
                             'reasoning': 'API request failed',
-                            'model': 'blip2-opt-2.7b'
+                            'model': 'blip-image-captioning'
                         }
                 
             except Exception as e:
@@ -393,7 +398,7 @@ class BLIP2Interface(VLMInterface):
                         'confidence': 0.0,
                         'error': str(e),
                         'reasoning': f'Error after {self.max_retries} attempts',
-                        'model': 'blip2-opt-2.7b'
+                        'model': 'blip-image-captioning'
                     }
                 
                 time.sleep(2 ** attempt)
@@ -402,7 +407,7 @@ class BLIP2Interface(VLMInterface):
             'count': 0,
             'confidence': 0.0,
             'error': 'Max retries exceeded',
-            'model': 'blip2-opt-2.7b'
+            'model': 'blip-image-captioning'
         }
     
     def _create_counting_question(self, object_type: str, **kwargs) -> str:
@@ -653,11 +658,15 @@ class LLaVAInterface(VLMInterface):
         
         for attempt in range(self.max_retries):
             try:
+                # Use proper HuggingFace format for LLaVA
+                files = {'inputs': image_bytes}
+                data = {'text': prompt}
+                
                 response = requests.post(
                     self.api_url,
                     headers=headers,
-                    data=image_bytes,
-                    params={"prompt": prompt},
+                    files=files,
+                    data=data,
                     timeout=30
                 )
                 
