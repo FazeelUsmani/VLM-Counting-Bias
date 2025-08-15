@@ -74,8 +74,10 @@ def main():
         try:
             temp_vlm = VLMManager(openai_key=openai_key, hf_token=hf_token)
             available_models = temp_vlm.get_available_models()
-        except:
-            available_models = ["BLIP-2"]  # Fallback to BLIP-2 which works without API keys
+        except Exception as e:
+            st.error(f"Error initializing VLM manager: {str(e)}")
+            # Show all models anyway - they'll show appropriate errors if API keys missing
+            available_models = ["GPT-4V", "Claude-Vision", "Gemini-Vision", "BLIP-2", "LLaVA"]
         
         st.info(f"Available models: {', '.join(available_models)}")
         

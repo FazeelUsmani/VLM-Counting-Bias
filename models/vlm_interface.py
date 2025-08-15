@@ -263,8 +263,8 @@ class VLMManager:
         # Initialize available models
         self.models = {}
         
-        if self.openai_key and OPENAI_AVAILABLE:
-            self.models['GPT-4V'] = GPT4VInterface(api_key=self.openai_key, max_retries=max_retries)
+        # Always add GPT-4V (will show error if no API key)
+        self.models['GPT-4V'] = GPT4VInterface(api_key=self.openai_key, max_retries=max_retries) if (self.openai_key and OPENAI_AVAILABLE) else None
         
         # Add BLIP-2 (works without API keys via public HF Inference API)
         self.models['BLIP-2'] = BLIP2Interface(hf_token=self.hf_token, max_retries=max_retries)
@@ -272,19 +272,17 @@ class VLMManager:
         # Add LLaVA via HuggingFace API (no local dependencies needed)
         self.models['LLaVA'] = LLaVAInterface(max_retries=max_retries)
         
-        # Add Claude Vision if API key available
+        # Always add Claude Vision (will show error if no API key)
         anthropic_key = os.getenv("ANTHROPIC_API_KEY")
-        if anthropic_key:
-            self.models['Claude-Vision'] = ClaudeVisionInterface(api_key=anthropic_key, max_retries=max_retries)
+        self.models['Claude-Vision'] = ClaudeVisionInterface(api_key=anthropic_key, max_retries=max_retries) if anthropic_key else None
         
-        # Add Gemini Vision if API key available
+        # Always add Gemini Vision (will show error if no API key)
         gemini_key = os.getenv("GEMINI_API_KEY")
-        if gemini_key:
-            self.models['Gemini-Vision'] = GeminiVisionInterface(api_key=gemini_key, max_retries=max_retries)
+        self.models['Gemini-Vision'] = GeminiVisionInterface(api_key=gemini_key, max_retries=max_retries) if gemini_key else None
         
-        # Add more HuggingFace models via API
-        self.models['BLIP2-FlanT5'] = BLIP2Interface(hf_token=self.hf_token, max_retries=max_retries, model_name="Salesforce/blip2-flan-t5-xl")
-        self.models['InstructBLIP'] = BLIP2Interface(hf_token=self.hf_token, max_retries=max_retries, model_name="Salesforce/instructblip-vicuna-7b")
+        # Add more HuggingFace models via API (using default BLIP2 for now)
+        # self.models['BLIP2-FlanT5'] = BLIP2Interface(hf_token=self.hf_token, max_retries=max_retries)
+        # self.models['InstructBLIP'] = BLIP2Interface(hf_token=self.hf_token, max_retries=max_retries)
     
     def get_available_models(self) -> List[str]:
         """Get list of available model names."""
@@ -301,7 +299,17 @@ class VLMManager:
                 'model': model_name
             }
         
-        return self.models[model_name].count_objects(image_base64, object_type, **kwargs)
+        model_instance = self.models[model_name]
+        if model_instance is None:
+            return {
+                'count': 0,
+                'confidence': 0.0,
+                'error': f'API key required for {model_name}',
+                'reasoning': 'Please provide the required API key in the sidebar',
+                'model': model_name
+            }
+        
+        return model_instance.count_objects(image_base64, object_type, **kwargs)
 
 
 class BLIP2Interface(VLMInterface):
